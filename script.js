@@ -1,107 +1,37 @@
+const audioFile = document.getElementById("audioFile");
+const fileName = document.getElementById("fileName");
+const status = document.getElementById("status");
 
-*{
-    margin:0;
-    padding:0;
-    box-sizing:border-box;
-}
+audioFile.addEventListener("change", function () {
 
-body{
-    font-family:Arial, sans-serif;
-    background:#111827;
-    color:white;
-    min-height:100vh;
-    display:flex;
-    flex-direction:column;
-}
+    if (audioFile.files.length > 0) {
 
-header{
-    text-align:center;
-    padding:50px 20px;
-    background:linear-gradient(135deg,#6d28d9,#db2777);
-}
+        fileName.innerHTML =
+            "🎵 Selected: " + audioFile.files[0].name;
 
-header h1{
-    font-size:2.2rem;
-    margin-bottom:10px;
-}
+        status.innerHTML =
+            "✅ Song selected. Ready for AI processing.";
 
-header p{
-    opacity:.9;
-}
+    } else {
 
-main{
-    flex:1;
-    display:flex;
-    justify-content:center;
-    align-items:center;
-    padding:30px 20px;
-}
+        fileName.innerHTML = "";
+        status.innerHTML = "";
 
-.upload-box{
-    width:100%;
-    max-width:500px;
-    background:#1f2937;
-    padding:35px;
-    border-radius:20px;
-    text-align:center;
-    box-shadow:0 10px 30px rgba(0,0,0,.4);
-}
+    }
 
-.upload-box h2{
-    margin-bottom:15px;
-}
+});
 
-.upload-box p{
-    color:#cbd5e1;
-    line-height:1.6;
-    margin-bottom:25px;
-}
 
-input[type="file"]{
-    width:100%;
-    padding:15px;
-    background:#111827;
-    border-radius:10px;
-    margin-bottom:20px;
-}
+function startProcessing() {
 
-button{
-    width:100%;
-    padding:15px;
-    border:none;
-    border-radius:10px;
-    font-size:17px;
-    font-weight:bold;
-    cursor:pointer;
-    background:linear-gradient(90deg,#8b5cf6,#ec4899);
-    color:white;
-}
+    if (audioFile.files.length === 0) {
 
-button:hover{
-    transform:scale(1.03);
-}
+        status.innerHTML =
+            "⚠️ Please select a song first!";
 
-#status{
-    margin-top:20px;
-    font-weight:bold;
-}
-
-footer{
-    text-align:center;
-    padding:20px;
-    background:#0f172a;
-    color:#94a3b8;
-}
-3️⃣ پوءِ script.js ٺاهيو
-ان ۾ هي سادو ڪوڊ رکو:
-function startProcessing(){
-
-    const file = document.getElementById("audioFile").files[0];
-    const status = document.getElementById("status");
-
-    if(!file){
-        status.innerHTML = "⚠️ Please select a song first!";
         return;
     }
 
-    
+    status.innerHTML =
+        "🤖 AI Vocal Separation will be connected next...";
+}
