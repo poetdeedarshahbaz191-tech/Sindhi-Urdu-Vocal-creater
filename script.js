@@ -1,202 +1,542 @@
 
-const audioFile = document.getElementById("audioFile"); const fileName = document.getElementById("fileName"); const status = document.getElementById("status");
-const audioPlayer = document.getElementById("audioPlayer"); const bpmSlider = document.getElementById("bpm"); const bpmValue = document.getElementById("bpmValue");
-const countBox = document.getElementById("countBox"); const startCue = document.getElementById("startCue");
-const startButton = document.getElementById("startButton"); const stopButton = document.getElementById("stopButton");
-let audioURL = null; let beatTimer = null; let cueTimer = null; let currentBeat = 0;
-/* ============================== SONG FILE SELECT ============================== */
+/* ==========================================
+   🎤 Sindhi Urdu Vocal Maker
+   Complete script.js
+   ========================================== */
+
+const audioFile = document.getElementById("audioFile");
+const fileName = document.getElementById("fileName");
+const audioPlayer = document.getElementById("audioPlayer");
+
+const bpm = document.getElementById("bpm");
+const bpmValue = document.getElementById("bpmValue");
+
+const countBox = document.getElementById("countBox");
+const countNumber = document.getElementById("countNumber");
+
+const startCue = document.getElementById("startCue");
+
+const startBtn = document.getElementById("startBtn");
+const stopBtn = document.getElementById("stopBtn");
+
+const status = document.getElementById("status");
+
+
+/* ==========================================
+   VARIABLES
+   ========================================== */
+
+let selectedFile = null;
+let audioURL = null;
+
+let countTimer = null;
+let countStep = 0;
+
+let processing = false;
+
+
+/* ==========================================
+   INITIAL STATE
+   ========================================== */
+
+countBox.style.display = "block";
+startCue.style.display = "none";
+
+stopBtn.disabled = true;
+
+bpmValue.textContent = bpm.value + " BPM";
+
+status.textContent = "🎵 Select a song to begin.";
+
+
+/* ==========================================
+   SONG SELECT
+   ========================================== */
+
 audioFile.addEventListener("change", function () {
-if (audioFile.files.length > 0) {
 
-    const file = audioFile.files[0];
+    if (!audioFile.files.length) {
 
-    fileName.innerHTML =
-        "🎵 Selected: " + file.name;
+        selectedFile = null;
 
-    status.innerHTML =
-        "✅ Song selected. Ready for playback.";
+        fileName.textContent = "";
+        audioPlayer.style.display = "none";
 
-    // Create audio URL
-    if (audioURL) {
-        URL.revokeObjectURL(audioURL);
+        status.textContent =
+            "❌ No song selected.";
+
+        return;
     }
 
-    audioURL = URL.createObjectURL(file);
+
+    selectedFile = audioFile.files[0];
+
+
+    /* Show selected filename */
+
+    fileName.textContent =
+        "🎵 Selected: " + selectedFile.name;
+
+
+    /* Create preview URL */
+
+    if (audioURL) {
+
+        URL.revokeObjectURL(audioURL);
+
+    }
+
+    audioURL =
+        URL.createObjectURL(selectedFile);
+
 
     audioPlayer.src = audioURL;
 
     audioPlayer.style.display = "block";
 
-} else {
 
-    fileName.innerHTML = "";
-    status.innerHTML = "";
-
-    audioPlayer.removeAttribute("src");
-    audioPlayer.style.display = "none";
-}
-});
-/* ============================== BPM SLIDER ============================== */
-if (bpmSlider) {
-bpmSlider.addEventListener("input", function () {
-
-    bpmValue.innerHTML =
-        bpmSlider.value + " BPM";
+    status.textContent =
+        "✅ Song selected. Ready for processing.";
 
 });
+
+
+/* ==========================================
+   BPM
+   ========================================== */
+
+bpm.addEventListener("input", function () {
+
+    bpmValue.textContent =
+        bpm.value + " BPM";
+
+});
+
+
+/* ==========================================
+   START PROCESSING
+   ========================================== */
+
+async function startProcessing() {
+
+    if (!selectedFile) {
+
+        status.textContent =
+            "⚠️ Please select a song first.";
+
+        return;
+    }
+
+
+    if (processing) {
+
+        return;
+
+    }
+
+
+    processing = true;
+
+    startBtn.disabled = true;
+
+    stopBtn.disabled = false;
+
+
+    status.textContent =
+        "🥁 Preparing singer count-in...";
+
+
+    /* Count-in */
+
+    const countFinished =
+        await startCountIn();
+
+
+    if (!countFinished) {
+
+        return;
+
+    }
+
+
+    if (!processing) {
+
+        return;
+
+    }
+
+
+    status.textContent =
+        "🤖 AI is separating vocals and music...";
+
+
+    /*
+       ======================================
+       AI SEPARATION
+       ======================================
+
+       NOTE:
+
+       /api/separate must be connected
+       to a real AI backend.
+
+    */
+
+    try {
+
+        const result =
+            await separateVocals(selectedFile);
+
+
+        if (!processing) {
+
+            return;
+
+        }
+
+
+        if (result && result.success) {
+
+            status.textContent =
+                "✅ Vocal separation completed.";
+
+            showResults(result);
+
+        }
+
+        else {
+
+            status.textContent =
+                "❌ Separation failed.";
+
+        }
+
+    }
+
+    catch (error) {
+
+        console.error(error);
+
+        status.textContent =
+            "⚠️ AI backend is not connected yet.";
+
+    }
+
+
+    processing = false;
+
+    startBtn.disabled = false;
+
+    stopBtn.disabled = true;
+
 }
-/* ============================== START PROCESSING ============================== */
-function startProcessing() {
-if (audioFile.files.length === 0) {
 
-    status.innerHTML =
-        "⚠️ Please select a song first!";
 
-    return;
-}
+/* ==========================================
+   COUNT-IN
+   ========================================== */
 
-status.innerHTML =
-    "🎵 Starting music with singer count-in...";
-
-startCue.style.display = "none";
-
-startCountIn();
-}
-/* ============================== COUNT-IN SYSTEM 1 → 2 → 3 → 4 ============================== */
 function startCountIn() {
-stopCue();
 
-currentBeat = 0;
+    return new Promise(function (resolve) {
 
-countBox.style.display = "flex";
+        stopCountTimer();
 
-const bpm = Number(bpmSlider.value);
-
-const beatDuration = 60000 / bpm;
-
-// Start music
-audioPlayer.currentTime = 0;
-
-audioPlayer.play().catch(function (error) {
-
-    console.log("Audio play error:", error);
-
-    status.innerHTML =
-        "⚠️ Please press the Play button on the audio player.";
-
-});
+        countStep = 1;
 
 
-// First beat immediately
-showBeat();
+        countBox.style.display =
+            "block";
 
-// Continue beats
-beatTimer = setInterval(function () {
+        startCue.style.display =
+            "none";
 
-    showBeat();
 
-}, beatDuration);
+        countNumber.textContent =
+            countStep;
+
+
+        const bpmNumber =
+            Number(bpm.value);
+
+
+        const beatTime =
+            60000 / bpmNumber;
+
+
+        countTimer =
+            setInterval(function () {
+
+                if (!processing) {
+
+                    stopCountTimer();
+
+                    resolve(false);
+
+                    return;
+
+                }
+
+
+                countStep++;
+
+
+                if (countStep <= 4) {
+
+                    countNumber.textContent =
+                        countStep;
+
+                }
+
+
+                else {
+
+                    stopCountTimer();
+
+
+                    countBox.style.display =
+                        "none";
+
+
+                    startCue.style.display =
+                        "block";
+
+
+                    startCue.textContent =
+                        "🎤 VOCAL START";
+
+
+                    status.textContent =
+                        "🎤 VOCAL START";
+
+
+                    resolve(true);
+
+                }
+
+            }, beatTime);
+
+    });
+
 }
-/* ============================== SHOW BEAT ============================== */
-function showBeat() {
-currentBeat++;
 
-// 1, 2, 3, 4
-if (currentBeat <= 4) {
 
-    countBox.innerHTML = currentBeat;
+/* ==========================================
+   STOP COUNT TIMER
+   ========================================== */
 
-    // Restart animation
-    countBox.classList.remove("beatFlash");
+function stopCountTimer() {
 
-    void countBox.offsetWidth;
+    if (countTimer) {
 
-    countBox.classList.add("beatFlash");
+        clearInterval(countTimer);
 
-}
+        countTimer = null;
 
-// After 4 beats
-if (currentBeat === 4) {
-
-    clearInterval(beatTimer);
-
-    beatTimer = null;
-
-    setTimeout(function () {
-
-        showVocalStart();
-
-    }, 600);
+    }
 
 }
-}
-/* ============================== VOCAL START MESSAGE ============================== */
-function showVocalStart() {
-countBox.style.display = "none";
 
-startCue.style.display = "block";
 
-startCue.innerHTML =
-    "🎤 VOCAL START!";
+/* ==========================================
+   STOP BUTTON
+   ========================================== */
 
-status.innerHTML =
-    "🎶 Singer can start now!";
-
-// Hide message after 2 seconds
-cueTimer = setTimeout(function () {
-
-    startCue.style.display = "none";
-
-}, 2000);
-}
-/* ============================== STOP ============================== */
 function stopCue() {
-if (beatTimer) {
 
-    clearInterval(beatTimer);
+    processing = false;
 
-    beatTimer = null;
+    stopCountTimer();
+
+
+    if (audioPlayer) {
+
+        audioPlayer.pause();
+
+    }
+
+
+    countStep = 0;
+
+    countNumber.textContent = "1";
+
+
+    countBox.style.display =
+        "block";
+
+    startCue.style.display =
+        "none";
+
+
+    startBtn.disabled = false;
+
+    stopBtn.disabled = true;
+
+
+    status.textContent =
+        "⏹ Processing stopped.";
 
 }
 
-if (cueTimer) {
 
-    clearTimeout(cueTimer);
+/* ==========================================
+   AI VOCAL SEPARATOR
+   ========================================== */
 
-    cueTimer = null;
+async function separateVocals(file) {
+
+    const formData =
+        new FormData();
+
+
+    formData.append(
+        "audio",
+        file
+    );
+
+
+    formData.append(
+        "bpm",
+        bpm.value
+    );
+
+
+    /*
+       Send file to AI backend
+    */
+
+    const response =
+        await fetch(
+            "/api/separate",
+            {
+                method: "POST",
+                body: formData
+            }
+        );
+
+
+    if (!response.ok) {
+
+        throw new Error(
+            "Server error: " +
+            response.status
+        );
+
+    }
+
+
+    return await response.json();
 
 }
 
-currentBeat = 0;
 
-countBox.style.display = "none";
+/* ==========================================
+   SHOW VOCALS + MUSIC
+   ========================================== */
 
-startCue.style.display = "none";
+function showResults(result) {
 
-if (audioPlayer) {
+    const oldResults =
+        document.getElementById("results");
 
-    audioPlayer.pause();
 
-    audioPlayer.currentTime = 0;
+    if (oldResults) {
+
+        oldResults.remove();
+
+    }
+
+
+    const results =
+        document.createElement("div");
+
+
+    results.id =
+        "results";
+
+
+    results.innerHTML = `
+
+        <hr>
+
+        <h2>🎧 Separation Complete</h2>
+
+
+        <div class="result-item">
+
+            <h3>🎤 Vocals</h3>
+
+            <audio
+                controls
+                style="width:100%;"
+                src="${result.vocals}">
+            </audio>
+
+            <br><br>
+
+            <a
+                href="${result.vocals}"
+                download
+                class="download-btn">
+
+                ⬇️ Download Vocals
+
+            </a>
+
+        </div>
+
+
+        <br>
+
+
+        <div class="result-item">
+
+            <h3>🎵 Music / Instrumental</h3>
+
+            <audio
+                controls
+                style="width:100%;"
+                src="${result.music}">
+            </audio>
+
+            <br><br>
+
+            <a
+                href="${result.music}"
+                download
+                class="download-btn">
+
+                ⬇️ Download Music
+
+            </a>
+
+        </div>
+
+    `;
+
+
+    document
+        .querySelector(".upload-box")
+        .appendChild(results);
 
 }
 
-status.innerHTML =
-    "⏹️ Stopped.";
-}
-/* ============================== STOP BUTTON ============================== */
-if (stopButton) {
-stopButton.addEventListener("click", function () {
 
-    stopCue();
+/* ==========================================
+   CLEANUP
+   ========================================== */
 
-});
-}
-/* ============================== START BUTTON ============================== */
-if (startButton) {
-startButton.addEventListener("click", function () {
+window.addEventListener(
+    "beforeunload",
+    function () {
 
-    startProcessing();
+        if (audioURL) {
 
-});
-}
+            URL.revokeObjectURL(audioURL);
+
+        }
+
+        stopCountTimer();
+
+    }
+);
