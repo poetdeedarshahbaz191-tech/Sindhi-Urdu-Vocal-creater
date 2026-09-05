@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 
@@ -29,27 +28,125 @@
         vocals from music using AI.
       </p>
 
+      <!-- SONG UPLOAD -->
+
       <input
         type="file"
         id="audioFile"
         accept="audio/*"
       >
-<p id="fileName"></p>
-      <button onclick="startProcessing()">
+
+      <p id="fileName"></p>
+
+
+      <!-- MUSIC PLAYER -->
+
+      <audio
+        id="audioPlayer"
+        controls
+        style="display:none; width:100%;">
+      </audio>
+
+
+      <!-- BPM CONTROL -->
+
+      <div class="bpm-section">
+
+        <h3>🥁 Singer Beat / BPM</h3>
+
+        <p>
+          Set the music BPM for accurate
+          singer count-in.
+        </p>
+
+        <input
+          type="range"
+          id="bpm"
+          min="60"
+          max="200"
+          value="120"
+        >
+
+        <div id="bpmValue">
+          120 BPM
+        </div>
+
+      </div>
+
+
+      <!-- COUNT-IN DISPLAY -->
+
+      <div id="countBox">
+
+        <span id="countNumber">
+          1
+        </span>
+
+      </div>
+
+
+      <!-- VOCAL START -->
+
+      <div id="startCue">
+
+        🎤 VOCAL START
+
+      </div>
+
+
+      <!-- BUTTON -->
+
+      <button
+        id="startBtn"
+        onclick="startProcessing()">
+
         🤖 Separate Vocals
+
       </button>
 
+
+      <button
+        id="stopBtn"
+        onclick="stopCue()"
+        disabled>
+
+        ⏹ Stop
+
+      </button>
+
+
       <p id="status"></p>
+
+
+      <div class="cue-info">
+
+        🥁 Singer Count-In
+
+        <br><br>
+
+        <strong>
+          1 → 2 → 3 → 4 → 🎤 VOCAL START
+        </strong>
+
+      </div>
 
     </section>
 
   </main>
 
+
   <footer>
-    <p>© 2026 Sindhi Urdu Vocal Maker | AI Music Studio</p>
+
+    <p>
+      © 2026 Sindhi Urdu Vocal Maker |
+      AI Music Studio
+    </p>
+
   </footer>
+
 
   <script src="script.js"></script>
 
 </body>
+
 </html>
