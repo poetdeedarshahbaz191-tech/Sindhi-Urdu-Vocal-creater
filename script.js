@@ -1,4 +1,3 @@
-
 /* ==========================================
    🎤 Sindhi Urdu Vocal Maker
    Complete script.js
